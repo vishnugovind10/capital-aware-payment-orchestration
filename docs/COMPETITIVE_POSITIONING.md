@@ -1,6 +1,6 @@
 # Competitive positioning and capability map
 
-Research checked 18 November 2026. This note uses provider categories and deliberately omits commercial names under this repository’s publication privacy boundary. It does not claim that any category lacks a capability unless that limitation is explicitly described here. Public infrastructure research is cited; vendor-specific feature claims and share/pricing estimates are excluded.
+Research checked 18 November 2026. This positioning note is a short summary; named-vendor capability evidence and source links are maintained in [Competitor Deep Dive](COMPETITOR_DEEP_DIVE.md), as specifically required by the competitive-validation research scope. It does not claim that any provider lacks a capability where public evidence was not found.
 
 ## Market categories
 
@@ -31,4 +31,4 @@ The current demonstrator’s narrow distinction is its visible deterministic acc
 
 ## Research limits
 
-This is category-level desk research, not an exhaustive product comparison. It does not establish feature absence, market size, purchase intent, or defensibility. Vendor materials surfaced during research are not reproduced or linked in order to honor the no-company-identifiers constraint. Independent buyer evidence and public product documentation review under an explicitly permitted disclosure scope are next steps.
+This is category-level context, not an exhaustive teardown. Named-vendor desk research remains limited to public product pages and technical materials; unknowns may be resolved by configuration, contract, or private demonstrations. The review does not establish feature absence, market size, purchase intent, or defensibility. See [Buyer Problem Analysis](BUYER_PROBLEM_ANALYSIS.md), [Demand Signals](DEMAND_SIGNALS.md), and [Strategic Verdict](STRATEGIC_VERDICT.md) for the current validation status.
