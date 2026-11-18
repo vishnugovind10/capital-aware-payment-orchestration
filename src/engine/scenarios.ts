@@ -1,0 +1,118 @@
+import type { Scenario } from "./orchestrator";
+
+export const initialScenario: Scenario = {
+  liquidity: 500_000,
+  obligations: [
+    {
+      id: "PAY-001",
+      destination: "Brazil",
+      amount: 180_000,
+      priority: "High",
+      deadlineHours: 24,
+      allowSplit: true,
+    },
+    {
+      id: "PAY-002",
+      destination: "Singapore",
+      amount: 220_000,
+      priority: "Medium",
+      deadlineHours: 48,
+      allowSplit: true,
+    },
+    {
+      id: "PAY-003",
+      destination: "Mexico",
+      amount: 160_000,
+      priority: "High",
+      deadlineHours: 24,
+      allowSplit: true,
+    },
+  ],
+  routes: [
+    {
+      id: "br-bank",
+      provider: "Meridian",
+      rail: "Bank transfer",
+      feeBps: 14,
+      fxBps: 28,
+      fixedFee: 8,
+      settlementHours: 18,
+      available: true,
+      failed: false,
+    },
+    {
+      id: "br-stable",
+      provider: "Northstar",
+      rail: "Stablecoin → local payout",
+      feeBps: 9,
+      fxBps: 36,
+      fixedFee: 13,
+      settlementHours: 3,
+      available: true,
+      failed: false,
+    },
+    {
+      id: "si-bank",
+      provider: "Meridian",
+      rail: "Bank transfer",
+      feeBps: 16,
+      fxBps: 22,
+      fixedFee: 8,
+      settlementHours: 30,
+      available: true,
+      failed: false,
+    },
+    {
+      id: "si-stable",
+      provider: "Northstar",
+      rail: "Stablecoin → local payout",
+      feeBps: 11,
+      fxBps: 31,
+      fixedFee: 13,
+      settlementHours: 5,
+      available: true,
+      failed: false,
+    },
+    {
+      id: "me-bank",
+      provider: "Meridian",
+      rail: "Bank transfer",
+      feeBps: 18,
+      fxBps: 34,
+      fixedFee: 8,
+      settlementHours: 20,
+      available: true,
+      failed: false,
+    },
+    {
+      id: "me-stable",
+      provider: "Northstar",
+      rail: "Stablecoin → local payout",
+      feeBps: 10,
+      fxBps: 42,
+      fixedFee: 13,
+      settlementHours: 4,
+      available: true,
+      failed: false,
+    },
+  ],
+};
+
+export const scenarios: Record<string, Scenario> = {
+  baseline: initialScenario,
+  "liquidity-shortfall": { ...initialScenario, liquidity: 420_000 },
+  "route-failure": {
+    ...initialScenario,
+    routes: initialScenario.routes.map((r) =>
+      r.id === "br-bank" ? { ...r, failed: true } : r,
+    ),
+  },
+  "concurrent-obligations": {
+    ...initialScenario,
+    liquidity: 560_000,
+    obligations: initialScenario.obligations.map((o) => ({
+      ...o,
+      priority: "High",
+    })),
+  },
+};

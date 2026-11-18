@@ -1,0 +1,5 @@
+{
+  "name": "route-failure",
+  "failedRoute": "br-bank",
+  "expectedBehavior": "Recalculate using the next eligible available route, or report no feasible route."
+}

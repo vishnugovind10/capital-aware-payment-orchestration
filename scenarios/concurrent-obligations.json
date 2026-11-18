@@ -1,0 +1,6 @@
+{
+  "name": "concurrent-obligations",
+  "liquidity": 560000,
+  "obligationTotal": 560000,
+  "expectedBehavior": "Deterministic priority/deadline ordering reserves shared liquidity once; no double allocation."
+}

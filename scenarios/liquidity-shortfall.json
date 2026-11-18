@@ -1,0 +1,7 @@
+{
+  "name": "liquidity-shortfall",
+  "liquidity": 420000,
+  "obligationTotal": 560000,
+  "expectedUnfunded": 140000,
+  "note": "Synthetic liquidity stress case; route quotes are loaded from the application fixtures."
+}

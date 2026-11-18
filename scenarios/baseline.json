@@ -1,0 +1,31 @@
+{
+  "name": "baseline",
+  "liquidity": 500000,
+  "obligations": [
+    {
+      "id": "PAY-001",
+      "destination": "Brazil",
+      "amount": 180000,
+      "priority": "High",
+      "deadlineHours": 24,
+      "allowSplit": true
+    },
+    {
+      "id": "PAY-002",
+      "destination": "Singapore",
+      "amount": 220000,
+      "priority": "Medium",
+      "deadlineHours": 48,
+      "allowSplit": true
+    },
+    {
+      "id": "PAY-003",
+      "destination": "Mexico",
+      "amount": 160000,
+      "priority": "High",
+      "deadlineHours": 24,
+      "allowSplit": true
+    }
+  ],
+  "note": "All balances, routes, quotes, fees, and deadlines are synthetic illustrations."
+}
