@@ -4,6 +4,8 @@
 
 CapitalFlow is a working, browser-based reference demonstrator for comparing transaction-level route selection with portfolio-aware payment planning. It makes shared-liquidity reservations, route constraints and funding gaps visible across concurrent obligations.
 
+**Live demonstrator:** [capital-aware-payment-orchestration.vercel.app](https://capital-aware-payment-orchestration.vercel.app/)
+
 > **Research prototype. All balances, payment obligations, route quotes, provider names, costs, deadlines and outcomes are synthetic. No real payments are executed and no external systems are connected.**
 
 ## Run locally
