@@ -31,17 +31,16 @@ const money = (n: number) =>
     currency: "EUR",
     maximumFractionDigits: 0,
   }).format(n);
-const short = (n: number) => `€${Math.round(n / 1000)}k`;
 const actionLabel: Record<string, string> = {
-  EXECUTE: "Reserved",
-  SPLIT: "Split",
-  FUND: "Requires funding",
-  DEFER: "Deferred",
+  PROPOSE: "Independent proposal",
+  ALLOCATE: "Planned allocation",
+  PARTIAL: "Partial allocation",
+  UNFUNDED: "Requires funding",
   NO_ROUTE: "No feasible route",
 };
 const displayAction = (action: string, mode: "portfolio" | "independent") =>
-  action === "EXECUTE" && mode === "independent"
-    ? "Executable"
+  action === "PROPOSE" && mode === "independent"
+    ? "Proposal · no reservation"
     : (actionLabel[action] ?? actionLabel.NO_ROUTE);
 
 export default function App() {
@@ -74,6 +73,7 @@ export default function App() {
         {
           id: `PAY-${String(s.obligations.length + 1).padStart(3, "0")}`,
           destination: "Brazil",
+          corridor: "EUR-BRL",
           amount: 50000,
           priority: "Low",
           deadlineHours: 48,
@@ -173,7 +173,7 @@ export default function App() {
             <div className="figure-main">
               <div>
                 <small>Available liquidity</small>
-                <strong>{money(scenario.liquidity)}</strong>
+                <strong>{money(plans.portfolio.availableLiquidity)}</strong>
               </div>
               <div className="figure-line" />
               <div>
@@ -188,17 +188,16 @@ export default function App() {
               </span>
               <b
                 className={
-                  Math.max(0, obligationsTotal - scenario.liquidity) > 0
+                  Math.max(0, obligationsTotal - plans.portfolio.availableLiquidity) > 0
                     ? "gap"
                     : ""
                 }
               >
-                {money(Math.max(0, obligationsTotal - scenario.liquidity))}
+                {money(Math.max(0, obligationsTotal - plans.portfolio.availableLiquidity))}
               </b>
             </div>
             <div className="figure-caption">
-              Portfolio-aware decisions reserve shared capacity across payment
-              instructions.
+              Total {money(scenario.totalLiquidity)} · opening reserved {money(scenario.reservedLiquidity)} · committed {money(scenario.committedLiquidity)}. Plans are local recommendations only.
             </div>
           </div>
         </section>
@@ -223,6 +222,7 @@ export default function App() {
                 defaultValue="baseline"
               >
                 <option value="baseline">Baseline · €500k</option>
+                <option value="capacity-tradeoff">Route capacity trade-off · €200k</option>
                 <option value="liquidity-shortfall">
                   Liquidity stress · €420k
                 </option>
@@ -254,8 +254,8 @@ export default function App() {
             </div>
             <span className="toolbar-caption">
               {activeMode === "portfolio"
-                ? "Shared liquidity reservations on"
-                : "Each obligation evaluated independently"}
+                ? "Shared liquidity and route limits coordinated"
+                : "Independent proposals · shared limits not reserved"}
             </span>
             <button className="recalc" onClick={actions}>
               <RotateCcw size={14} /> Recalculate
@@ -270,7 +270,7 @@ export default function App() {
                 <span className="synthetic-tag">SYNTHETIC</span>
               </div>
               <label className="field-label" htmlFor="liquidity">
-                Available liquidity
+                Total liquidity · EUR normalized
               </label>
               <div className="money-input">
                 <span>€</span>
@@ -279,11 +279,11 @@ export default function App() {
                   type="number"
                   min="0"
                   step="10000"
-                  value={scenario.liquidity}
+                  value={scenario.totalLiquidity}
                   onChange={(e) =>
                     setScenario((s) => ({
                       ...s,
-                      liquidity: Math.max(0, Number(e.target.value) || 0),
+                      totalLiquidity: Math.max(0, Number(e.target.value) || 0),
                     }))
                   }
                 />
@@ -379,7 +379,7 @@ export default function App() {
                   </span>
                   <div className="route-name">
                     <b>{r.provider}</b>
-                    <small>{r.rail}</small>
+                    <small>{r.rail} · {r.corridor} · cap {money(r.capacityEUR)} / plan</small>
                   </div>
                   <label>
                     Fee{" "}
@@ -469,7 +469,7 @@ export default function App() {
                     <div className="decision-cell">
                       <b>{ind?.routeId ?? "—"}</b>
                       <small>
-                        {ind?.action === "EXECUTE"
+                        {ind?.action === "PROPOSE"
                           ? money(ind.cost) + " estimated cost"
                           : ind?.explanation}
                       </small>
@@ -477,7 +477,7 @@ export default function App() {
                     <div className="decision-cell">
                       <b>{port?.routeId ?? "—"}</b>
                       <small>
-                        {port?.action === "EXECUTE" || port?.action === "SPLIT"
+                        {port?.action === "ALLOCATE" || port?.action === "PARTIAL"
                           ? money(port.cost) + " estimated cost"
                           : port?.explanation}
                       </small>
@@ -487,8 +487,14 @@ export default function App() {
                         {displayAction(d?.action ?? "NO_ROUTE", activeMode)}
                       </span>
                       <small>
-                        {d?.amount ? money(d.amount) + " allocated" : ""}
+                        {d?.amount ? money(d.amount) + (activeMode === "independent" ? " proposed" : " planned") : ""}
                       </small>
+                      {d?.trace?.length ? (
+                        <details className="decision-trace">
+                          <summary>Decision trace</summary>
+                          <ul>{d.trace.map((line) => <li key={line}>{line}</li>)}</ul>
+                        </details>
+                      ) : null}
                     </div>
                   </div>
                 );
@@ -501,10 +507,10 @@ export default function App() {
                 <div>
                   <small>
                     {activeMode === "portfolio"
-                      ? "Reserved"
-                      : "Independent allocation"}
+                      ? "Planned allocation"
+                      : "Proposed total"}
                   </small>
-                  <b>{money(selected.reserved)}</b>
+                  <b>{money(activeMode === "portfolio" ? selected.allocatedLiquidity : selected.proposedAmount)}</b>
                 </div>
                 <div>
                   <small>
@@ -512,18 +518,16 @@ export default function App() {
                       ? "Remaining"
                       : "Unreserved balance"}
                   </small>
-                  <b className={selected.remaining < 0 ? "gap" : ""}>
-                    {money(selected.remaining)}
+                  <b className={selected.remainingAvailableLiquidity < 0 ? "gap" : ""}>
+                    {money(selected.remainingAvailableLiquidity)}
                   </b>
                 </div>
                 <div>
                   <small>
-                    {activeMode === "portfolio"
-                      ? "Unfunded"
-                      : "Over-allocation"}
+                    {activeMode === "portfolio" ? "Unfunded" : "Aggregate overcommitment"}
                   </small>
-                  <b className={selected.fundingGap ? "gap" : ""}>
-                    {money(selected.fundingGap)}
+                  <b className={selected.unfundedAmount || selected.overcommitment ? "gap" : ""}>
+                    {money(activeMode === "portfolio" ? selected.unfundedAmount : selected.overcommitment)}
                   </b>
                 </div>
               </div>
@@ -531,10 +535,18 @@ export default function App() {
                 <CircleAlert size={17} />
                 <span>
                   {activeMode === "portfolio"
-                    ? `${selected.feasibleCount} obligations fully reserved. Independent checks allocate ${money(plans.independent.reserved)} against ${money(scenario.liquidity)} of liquidity; portfolio reservations prevent that double allocation.`
-                    : "Each obligation has a route under its individual check. These decisions do not reserve capacity, so the combined plan may exceed treasury liquidity."}
+                    ? `${selected.feasibleCount} full obligations planned. The bounded portfolio search respects shared treasury liquidity and each route's plan-window capacity. No payment is initiated.`
+                    : `Independent proposals total ${money(plans.independent.decisions.reduce((sum, item) => sum + item.amount, 0))}; they do not consume shared limits. Aggregate overcommitment is ${money(plans.independent.overcommitment)}.`}
                 </span>
               </div>
+              <div className="model-note">
+                {selected.fullyFundedCount} full · {selected.partiallyFundedCount} partial · {selected.deadlineCompliantCount} deadline-compliant · {selected.liquidityUtilizationPercent}% {activeMode === "portfolio" ? "available liquidity allocated" : "opening liquidity proposed"}
+              </div>
+              {activeMode === "independent" && selected.overcommitment > 0 ? (
+                <div className="model-note">
+                  Excess: {money(selected.liquidityOvercommitment)} liquidity · {money(selected.routeCapacityOvercommitment)} route capacity.
+                </div>
+              ) : null}
             </div>
           </div>
           <div className="viz-grid">
@@ -552,7 +564,7 @@ export default function App() {
                     0,
                     Math.min(
                       100,
-                      ((d?.amount ?? 0) / Math.max(scenario.liquidity, 1)) *
+                      ((d?.amount ?? 0) / Math.max(plans.portfolio.availableLiquidity, 1)) *
                         100,
                     ),
                   );
@@ -572,16 +584,16 @@ export default function App() {
                     <div
                       className="bar unallocated"
                       style={{
-                        width: `${Math.max(0, Math.min(100, (selected.remaining / Math.max(scenario.liquidity, 1)) * 100))}%`,
+                        width: `${Math.max(0, Math.min(100, (selected.remainingAvailableLiquidity / Math.max(plans.portfolio.availableLiquidity, 1)) * 100))}%`,
                       }}
                     />
                   </div>
-                  <b>{money(selected.remaining)}</b>
+                  <b>{money(selected.remainingAvailableLiquidity)}</b>
                 </div>
                 <div className="axis">
                   <span>€0</span>
-                  <span>{short(scenario.liquidity / 2)}</span>
-                  <span>{money(scenario.liquidity)}</span>
+                  <span>{money(plans.portfolio.availableLiquidity / 2)}</span>
+                  <span>{money(plans.portfolio.availableLiquidity)}</span>
                 </div>
               </div>
             </div>
@@ -614,7 +626,7 @@ export default function App() {
               </div>
               <p>
                 Cost is calculated on each plan’s allocated amount. A lower
-                total can mean less value is routed; compare it with reserved
+                total can mean less value is planned; compare it with allocated
                 amount and funding gap. Repair, capital and delay costs are
                 excluded.
               </p>
@@ -639,9 +651,9 @@ export default function App() {
                   <Check size={12} />
                 </span>
                 <div>
-                  <b>Reserve shared liquidity</b>
+                  <b>Plan shared liquidity allocation</b>
                   <small>
-                    {money(selected.reserved)} allocated in current plan
+                    {money(selected.allocatedLiquidity)} allocated in current plan
                   </small>
                 </div>
                 <small>02</small>
@@ -699,7 +711,7 @@ export default function App() {
               [
                 "04",
                 "Economic route optimisation",
-                "Compare explicit provider fees and FX costs after hard constraints; reserve shared liquidity.",
+                "Compare explicit provider fees and FX costs after hard constraints; allocate shared liquidity in the plan.",
               ],
               [
                 "05",
@@ -739,85 +751,78 @@ export default function App() {
           </div>
           <div className="evidence-grid">
             <article>
-              <div className="source-type">
-                VISA ANALYSIS · LARGE CORPORATES IN EUROPE
-              </div>
+              <div className="source-type">CROSS-BORDER PAYMENTS · SYSTEM LEVEL</div>
               <h3>
-                Cross-border costs, FX and reconciliation remain reported pain
-                points.
+                Interoperability and operating windows shape liquidity planning.
               </h3>
               <p>
-                Visa cites a confidential Visa Consulting & Analytics survey
-                conducted Jan. 2024–May 2025 (unpublished data). It reports FX
-                risk (55%), cost/speed transparency (53%), high transaction
-                costs (53%) and complex reconciliation (47%). The public page
-                provides no sample size; treat as provider-reported evidence,
-                not universal rates.
+                Public cross-border payment work identifies system access,
+                operating hours, interoperability and data exchange as coupled
+                design constraints. This is system-level context, not buyer
+                evidence for this demonstrator.
               </p>
               <a
-                href="https://uk.review.visa.com/money-movement/money-movement-whitepaper.html"
+                href="https://www.bis.org/committees/cpmi/cross-border-payments/overview"
                 target="_blank"
                 rel="noreferrer"
               >
-                Read Visa’s research <ArrowRight size={14} />
+                Read the programme overview <ArrowRight size={14} />
               </a>
             </article>
             <article>
-              <div className="source-type">BANK OF ENGLAND · 26 OCT 2026</div>
-              <h3>Agent adoption does not yet imply broad payment autonomy.</h3>
+              <div className="source-type">JURISDICTION MONITORING · 2026</div>
+              <h3>Payment-system conditions vary across jurisdictions.</h3>
               <p>
-                80% of responding UK financial-services firms reported deployed
-                AI agents. Even including planned deployment, no more than 9%
-                expected agents to initiate, execute or block payments within a
-                year. These are survey responses, not population-wide estimates.
+                A survey spanning 82 jurisdictions tracks differences in
+                interlinking, access, operating hours and message standards. It
+                does not measure demand for a separate portfolio planner.
               </p>
               <a
-                href="https://www.bankofengland.co.uk/report/2026/artificial-intelligence-in-uk-financial-services-2026"
+                href="https://www.bis.org/publications/cpmi-brief-13-enhancing-cross-border-payments-step-step-insights-2025-monitoring-survey"
                 target="_blank"
                 rel="noreferrer"
               >
-                Read the survey <ArrowRight size={14} />
+                Read the monitoring brief <ArrowRight size={14} />
               </a>
             </article>
             <article>
-              <div className="source-type">FEDERAL RESERVE · 14 JUL 2022</div>
+              <div className="source-type">DATA INTEROPERABILITY · 2024</div>
               <h3>
-                Interoperability depends on the purpose and system boundary.
+                Data rules affect payment speed, risk controls and privacy.
               </h3>
               <p>
-                The Federal Reserve’s framework describes interoperability as
-                layered and context-specific. It supports treating coordination
-                as a design problem; it does not validate demand for this
-                proposed standalone product.
+                International recommendations describe the need to align
+                cross-border payment data frameworks while preserving privacy
+                and financial-crime controls.
               </p>
               <a
-                href="https://www.federalreserve.gov/econres/notes/feds-notes/fit-for-purpose-payment-system-interoperability-a-framework-20220714.html"
+                href="https://www.fsb.org/2024/12/recommendations-to-promote-alignment-and-interoperability-across-data-frameworks-related-to-cross-border-payments-final-report/"
                 target="_blank"
                 rel="noreferrer"
               >
-                Read the framework <ArrowRight size={14} />
+                Read the recommendations <ArrowRight size={14} />
               </a>
             </article>
           </div>
           <div className="pilot-note">
             <div>
-              <span>COMMERCIAL ACTIVITY · 20 OCT 2026</span>
+              <span>PRODUCT SCOPE</span>
               <b>
-                Visa, BILL and Billtrust announced a live pilot for trusted
-                agents to complete approved invoice payments.
+                Existing orchestration and treasury systems may already solve
+                this workflow.
               </b>
               <small>
-                Vendor announcement with participating buyers and suppliers;
-                evidence of activity, not market-wide adoption or proof of
-                demand for this product.
+                Whether a separate portfolio planner is useful remains a buyer
+                discovery question. No customer research or purchase intent is
+                claimed.
               </small>
             </div>
             <a
-              href="https://corporate.visa.com/en/sites/visa-perspectives/press-releases/visa-bill-billtrust-launch-pilot.html"
+              href="#foundations"
               target="_blank"
               rel="noreferrer"
             >
-              Read announcement <ArrowRight size={14} />
+              Read positioning notes <ArrowRight size={14} />
             </a>
           </div>
           <div className="hypothesis-band">

@@ -1,12 +1,10 @@
 # Capital-Aware Payment Orchestration
 
-**An economic execution and liquidity coordination layer for programmable payments.**
+**A synthetic reference demonstrator for portfolio-aware payment planning.**
 
-CapitalFlow is a working, browser-based reference demonstrator for comparing transaction-level route selection with portfolio-aware payment planning. It makes shared-liquidity reservations, route constraints and funding gaps visible across concurrent obligations.
+CapitalFlow compares independent payment proposals with a bounded portfolio planner. The engine makes shared liquidity, explicit EUR-normalized corridors, deadlines, route capacity and modeled route costs visible before a payment decision.
 
-**Live demonstrator:** [capital-aware-payment-orchestration.vercel.app](https://capital-aware-payment-orchestration.vercel.app/)
-
-> **Research prototype. All balances, payment obligations, route quotes, provider names, costs, deadlines and outcomes are synthetic. No real payments are executed and no external systems are connected.**
+> Research prototype. Balances, obligations and route quotes are synthetic. No payment is initiated, reserved in an external ledger, executed, settled, reconciled, or connected to a provider or bank.
 
 ## Run locally
 
@@ -15,58 +13,43 @@ Node.js 22.12+ is required.
 ```bash
 npm install
 npm run dev
-```
-
-Open the local URL Vite prints. The app is a static client-side build and is ready for Vercel.
-
-```bash
 npm test
 npm run build
 npm run preview
 ```
 
-## Try the Orchestration Lab
+## Demonstrator
 
-The initial scenario has €500,000 of synthetic EUR liquidity and three obligations totaling €560,000: Brazil (€180,000), Singapore (€220,000) and Mexico (€160,000).
+The baseline has €500,000 total synthetic liquidity, no opening reservations, and three obligations totaling €560,000. Routes are explicitly assigned to EUR-normalized corridors and have a maximum EUR-equivalent capacity for the scenario planning window.
 
-- **Transaction-level** evaluates each instruction without consuming shared liquidity, making aggregate over-allocation visible.
-- **Portfolio-aware** orders obligations by priority, deadline and ID, then reserves treasury capacity once. Partial reservation is used only when enabled for that obligation.
-- Route availability, simulated failure, provider fee, FX spread, settlement time, amount, deadline and priority are editable.
-- Charts and summary figures derive from the same deterministic engine output.
+- **Independent proposals** pick each obligation’s least-cost individually feasible route without consuming shared liquidity or route capacity. Their aggregate can overcommit; proposals are not allocations.
+- **Portfolio plan** searches full-payment placements across at most eight obligations, then uses remaining balance/capacity for permitted partial allocations. It respects shared liquidity and per-route capacity.
+- The objective is lexicographic: maximize funded value in priority order (High, Medium, Low), then full-payment count by priority, then minimize modeled route cost. Stable IDs break remaining ties.
+- Route eligibility requires matching explicit corridor, availability, no simulated failure, and settlement time within the obligation deadline.
 
-An independent plan can allocate more than the treasury holds; its “Over-allocation” reports the excess. A portfolio plan reserves no more than available liquidity and reports the unpaid amount as “Unfunded”. A permitted partial payment is shown as a split and does not imply that either portion was executed.
+The baseline shows the value of aggregate control: independent proposals total €560,000 against €500,000 available; portfolio allocations cap at €500,000 and disclose €60,000 unfunded. This is not evidence of savings. Costs differ when amounts funded differ.
 
-## Economic model
+## Model boundaries
 
-For an eligible route:
+Amounts represent EUR-equivalent funding needs. The engine does not convert currencies or represent jurisdictional accounts, time-varying balances, capacity sharing across planning windows, quote freshness, per-leg split costs, credit, capital cost, delay/failure losses, compliance, permissions, actual reservations, execution, settlement, or reconciliation. A route capacity is a scenario-level planning-window limit, not a live provider commitment. Cost is a linear estimate: `amount × (fee bps + FX bps) / 10,000 + fixed fee`.
 
-```text
-estimated route cost = amount × (provider fee bps + FX spread bps) / 10,000 + fixed fee
-```
-
-Hard route constraints (availability, simulated failure and deadline) apply before cost ranking. The lowest-cost route wins; there are no hidden score weights. See [economic model](docs/ECONOMIC_MODEL.md), [architecture](docs/ARCHITECTURE.md), [product thesis](docs/PRODUCT_THESIS.md), [market evidence](docs/MARKET_EVIDENCE.md), [validation plan](docs/VALIDATION_PLAN.md) and [repository lineage](docs/REPOSITORY_LINEAGE.md).
-
-The model does **not** yet include real-time FX, currencies beyond normalized EUR funding requirements, route-liquidity capacities, counterparty risk, failure repair loss, cost of capital, delay penalties or actual settlement/reconciliation. The output is not a complete all-in cost or a real route recommendation.
+See [architecture](docs/ARCHITECTURE.md), [economic model](docs/ECONOMIC_MODEL.md), [engine audit](docs/ENGINE_AUDIT.md), [adversarial scenarios](docs/ADVERSARIAL_SCENARIOS.md), [competitive positioning](docs/COMPETITIVE_POSITIONING.md), [buyer discovery](docs/BUYER_DISCOVERY.md), [commercial hypotheses](docs/COMMERCIAL_HYPOTHESES.md), and [dependency security review](docs/SECURITY_REVIEW.md). Market evidence and validation plan remain supporting documents.
 
 ## Architecture
 
 ```text
 React + Vite interface
         ↓
-Deterministic TypeScript engine
+Deterministic TypeScript planning engine
         ↓
 Synthetic scenario fixtures
 ```
 
-The UI and engine run in the browser. No backend, database, authentication, wallet, blockchain, bank or provider connection is required. Decision, reservation, execution, settlement and reconciliation remain distinct concepts; only decision and simulated reservation are represented by this version.
+The app runs in the browser. There is no backend, database, identity system, wallet, chain, bank, or payment-provider connection. Recommendation and local simulated planning are the only represented lifecycle steps.
 
 ## Technical lineage
 
-The [lineage document](docs/REPOSITORY_LINEAGE.md) records what was inspected and what is conceptual only. PayFlow Control Plane was inspected as the primary implementation reference. The new engine reimplements a narrow subset of ideas; it does not import code or claim a tested integration. Related repositories are independent work, not a shared runtime or deployed product.
-
-## Commercial validation
-
-The initial customer hypothesis is cross-border payment fintechs and stablecoin payment infrastructure providers. A first pilot should compare shadow-mode plans against historical data for one corridor, with a documented incumbent baseline. No savings, adoption, security or operational improvement claims are made until measured.
+The [lineage document](docs/REPOSITORY_LINEAGE.md) records inspected technical references and boundaries. Related repositories are independent work; there is no shared runtime or tested integration.
 
 ## License
 

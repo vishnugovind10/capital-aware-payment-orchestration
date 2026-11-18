@@ -1,15 +1,13 @@
 # Product thesis
 
-Payment providers and payment platforms can expose several rails, corridors and FX quotes. Choosing a route for one instruction does not establish that the treasury can fund all of its obligations together.
+Choosing a route for one payment instruction does not prove that a portfolio of due obligations fits available funds and route limits together.
 
-CapitalFlow is a proposed economic decision and coordination layer between an approved payment obligation, treasury state and execution providers. It compares eligible synthetic routes, considers deadlines and competing obligations, reserves shared capacity, and exposes unfunded demand before execution.
+CapitalFlow is a proposed read-only planning and evidence layer after an obligation is approved and before a payment instruction is created. The current synthetic demonstrator compares independent proposals with a portfolio plan, explicit corridor and deadline rules, route capacity, and modeled costs. It does not create a real reservation or send a payment.
 
-## Initial customer hypothesis
+## Initial buyer hypothesis
 
-Cross-border payment fintechs, stablecoin payment infrastructure providers and multi-provider payment orchestration platforms are the first customer segments to validate. A pilot would start with one corridor, historical provider data and two or three routes in shadow mode. It should compare the incumbent decision with the proposed plan on all-in cost, on-time settlement, liquidity utilisation, failure/repair and reconciliation exceptions.
-
-These are evaluation measures, not promised benefits. Buyer pain, product gap, data access and willingness to pay remain unvalidated.
+Cross-border payout operators, payment platforms, treasury operations teams and digital-asset payment operators are segments to investigate. A first evaluation, if a buyer independently confirms the problem, could replay permissioned historical data in shadow mode against its actual decision and outcomes. Measures could include all-in cost, on-time completion, liquidity use, failed/repair items and reconciliation exceptions. These are measures to validate, not promised benefits.
 
 ## Product boundary
 
-The product consumes an already approved obligation. It does not establish agent identity, grant authority, issue credit, custody assets, or replace a payment rail. Any eventual integration with an authority, provider or settlement system is future work and requires its own implementation and tests.
+The product does not establish identity or authority, issue credit, custody assets, replace a payment rail, or connect to a system of record. Any integration, execution or settlement state would be separate future work with its own safety, policy, implementation and test requirements.
