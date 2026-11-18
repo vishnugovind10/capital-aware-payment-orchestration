@@ -1,11 +1,14 @@
 import type { Scenario } from "./orchestrator";
 
 export const initialScenario: Scenario = {
-  liquidity: 500_000,
+  totalLiquidity: 500_000,
+  reservedLiquidity: 0,
+  committedLiquidity: 0,
   obligations: [
     {
       id: "PAY-001",
       destination: "Brazil",
+      corridor: "EUR-BRL",
       amount: 180_000,
       priority: "High",
       deadlineHours: 24,
@@ -14,6 +17,7 @@ export const initialScenario: Scenario = {
     {
       id: "PAY-002",
       destination: "Singapore",
+      corridor: "EUR-SGD",
       amount: 220_000,
       priority: "Medium",
       deadlineHours: 48,
@@ -22,6 +26,7 @@ export const initialScenario: Scenario = {
     {
       id: "PAY-003",
       destination: "Mexico",
+      corridor: "EUR-MXN",
       amount: 160_000,
       priority: "High",
       deadlineHours: 24,
@@ -31,7 +36,9 @@ export const initialScenario: Scenario = {
   routes: [
     {
       id: "br-bank",
-      provider: "Meridian",
+      provider: "Synthetic bank network",
+      corridor: "EUR-BRL",
+      capacityEUR: 250_000,
       rail: "Bank transfer",
       feeBps: 14,
       fxBps: 28,
@@ -42,7 +49,9 @@ export const initialScenario: Scenario = {
     },
     {
       id: "br-stable",
-      provider: "Northstar",
+      provider: "Synthetic digital payout network",
+      corridor: "EUR-BRL",
+      capacityEUR: 250_000,
       rail: "Stablecoin → local payout",
       feeBps: 9,
       fxBps: 36,
@@ -53,7 +62,9 @@ export const initialScenario: Scenario = {
     },
     {
       id: "si-bank",
-      provider: "Meridian",
+      provider: "Synthetic bank network",
+      corridor: "EUR-SGD",
+      capacityEUR: 260_000,
       rail: "Bank transfer",
       feeBps: 16,
       fxBps: 22,
@@ -64,7 +75,9 @@ export const initialScenario: Scenario = {
     },
     {
       id: "si-stable",
-      provider: "Northstar",
+      provider: "Synthetic digital payout network",
+      corridor: "EUR-SGD",
+      capacityEUR: 260_000,
       rail: "Stablecoin → local payout",
       feeBps: 11,
       fxBps: 31,
@@ -75,7 +88,9 @@ export const initialScenario: Scenario = {
     },
     {
       id: "me-bank",
-      provider: "Meridian",
+      provider: "Synthetic bank network",
+      corridor: "EUR-MXN",
+      capacityEUR: 180_000,
       rail: "Bank transfer",
       feeBps: 18,
       fxBps: 34,
@@ -86,7 +101,9 @@ export const initialScenario: Scenario = {
     },
     {
       id: "me-stable",
-      provider: "Northstar",
+      provider: "Synthetic digital payout network",
+      corridor: "EUR-MXN",
+      capacityEUR: 180_000,
       rail: "Stablecoin → local payout",
       feeBps: 10,
       fxBps: 42,
@@ -100,7 +117,20 @@ export const initialScenario: Scenario = {
 
 export const scenarios: Record<string, Scenario> = {
   baseline: initialScenario,
-  "liquidity-shortfall": { ...initialScenario, liquidity: 420_000 },
+  "capacity-tradeoff": {
+    totalLiquidity: 200_000,
+    reservedLiquidity: 0,
+    committedLiquidity: 0,
+    obligations: [
+      { id: "PAY-A", destination: "Brazil", corridor: "EUR-BRL", amount: 100_000, priority: "High", deadlineHours: 24, allowSplit: false },
+      { id: "PAY-B", destination: "Brazil", corridor: "EUR-BRL", amount: 100_000, priority: "High", deadlineHours: 24, allowSplit: false },
+    ],
+    routes: [
+      { id: "br-limited-low-cost", provider: "Synthetic bank network", rail: "Bank transfer", corridor: "EUR-BRL", capacityEUR: 100_000, feeBps: 5, fxBps: 0, fixedFee: 0, settlementHours: 12, available: true, failed: false },
+      { id: "br-shared-capacity", provider: "Synthetic digital payout network", rail: "Digital payout", corridor: "EUR-BRL", capacityEUR: 100_000, feeBps: 30, fxBps: 0, fixedFee: 0, settlementHours: 3, available: true, failed: false },
+    ],
+  },
+  "liquidity-shortfall": { ...initialScenario, totalLiquidity: 420_000 },
   "route-failure": {
     ...initialScenario,
     routes: initialScenario.routes.map((r) =>
@@ -109,7 +139,7 @@ export const scenarios: Record<string, Scenario> = {
   },
   "concurrent-obligations": {
     ...initialScenario,
-    liquidity: 560_000,
+    totalLiquidity: 560_000,
     obligations: initialScenario.obligations.map((o) => ({
       ...o,
       priority: "High",
